@@ -1,0 +1,109 @@
+### install the required packages. 
+install.packages("tidyr")
+library(tidyr)
+
+install.packages("plyr")
+library(plyr)
+
+install.packages("dplyr")
+library(dplyr)
+
+## Vlookup used to combine both datasets, remove TRUE values and remove #NA before analysis in RStudio
+## This file generates several excel files which serve the purpose of being able to review the work as the code ran. 
+
+##Import the file in read mode into RStudio in order to perform analysis on it
+A_C = read.csv("auto_&_manual_combined_minus_dumps.csv", head=TRUE, sep=",")
+
+
+## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
+SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi != A_C$oxyuris_equi_m | A_C$strongyle != A_C$strongyle_m | 
+                                A_C$anoplocephala != A_C$anoplocephala_m | A_C$parascaris_equorum != A_C$parascaris_equorum_m |
+                                A_C$strongyloides_westeri != strongyloides_westeri_m))
+
+
+write.csv(SS2, file = "Difference between Auto and Manual parasites all col .csv")
+
+
+
+## working on the 'Difference between Auto and Manual parasites all col .csv' file, where a specific parasite's 
+## Auto columns have values that are less than the manual
+##columns (false negative) they are subsetted and written to a csv file. 
+
+## FN oxyuris_equi 
+SS3 <- subset(A_C, subset = c(A_C$oxyuris_equi < A_C$oxyuris_equi_m))
+
+
+## FN strongyl
+SS4 <- subset(A_C, subset = c(A_C$strongyle < A_C$strongyle_m))
+
+
+## FN anoplocephala
+SS5 <- subset(A_C, subset = c(A_C$anoplocephala < A_C$anoplocephala_m))
+
+
+## FN parascaris_equorum
+SS6 <- subset(A_C, subset = c(A_C$parascaris_equorum < A_C$parascaris_equorum_m))
+
+
+## FN strongyloides_westeri
+SS7 <- subset(A_C, subset = c(A_C$strongyloides_westeri < A_C$strongyloides_westeri_m))
+
+
+FN_combined <- rbind (SS3, SS4, SS5, SS6, SS7)
+
+write.csv(FN_combined, file = "FN_combined.csv")
+
+
+
+A_Css = data.frame(FN_combined)
+A_Cssagr = aggregate(cbind(count = scanimage_id) ~ scan_id, 
+                     data = A_Css, 
+                     FUN = function(x){NROW(x)})
+write.csv(A_Cssagr, file = "FN Rows per scan ID where there is a difference.csv")
+
+#False negatives by scan_id
+#FN_by_scan_id <- FN_combined %>% group_by(scan_id) %>% summarise_all(sum)
+
+#write.csv(FN_by_scan_id, file = "FN_by_scan_id.csv")
+
+## working on the 'Difference between Auto and Manual parasites all col .csv' file, where a specific parasite's 
+## Auto columns have values that are less than the manual
+##columns (false positive) they are subsetted and written to a csv file. 
+
+## FN oxyuris_equi 
+SS3 <- subset(A_C, subset = c(A_C$oxyuris_equi > A_C$oxyuris_equi_m))
+
+
+## FN strongyl
+SS4 <- subset(A_C, subset = c(A_C$strongyle > A_C$strongyle_m))
+
+
+## FN anoplocephala
+SS5 <- subset(A_C, subset = c(A_C$anoplocephala > A_C$anoplocephala_m))
+
+
+## FN parascaris_equorum
+SS6 <- subset(A_C, subset = c(A_C$parascaris_equorum > A_C$parascaris_equorum_m))
+
+
+## FN strongyloides_westeri
+SS7 <- subset(A_C, subset = c(A_C$strongyloides_westeri > A_C$strongyloides_westeri_m))
+
+
+FP_combined <- rbind (SS3, SS4, SS5, SS6, SS7)
+
+write.csv(FP_combined, file = "FP_combined.csv")
+
+
+
+### Count it to get numberOfImages per scan_id
+A_Css = data.frame(FP_combined)
+A_Cssagr = aggregate(cbind(count = scanimage_id) ~ scan_id, 
+                     data = A_Css, 
+                     FUN = function(x){NROW(x)})
+write.csv(A_Cssagr, file = "FP Rows per scan ID where there is a difference.csv")
+
+
+#P_by_scan_id <- FP_combined %>% group_by(scan_id) %>% summarise_all(sum)
+
+#write.csv(FP_by_scan_id, file = "FP_by_scan_id.csv")
