@@ -1,3 +1,6 @@
+install.packages("qpcR")
+library(qpcR)
+
 install.packages("tidyr")
 library(tidyr)
 
@@ -7,9 +10,16 @@ library(plyr)
 install.packages("dplyr")
 library(dplyr)
 
-############ Manual only count #############
+############### Data prep #########
+#Add "-m" to the end of each of the parasite names in the manula doc
 
-A_C2 = read.csv("manual_data.csv", head=TRUE, sep=",")
+
+
+
+
+############### Manual only count #############
+
+A_C2 = read.csv("manual_data_minus_dump_202102261212.csv", head=TRUE, sep=",")
 
 ### Sums
 #oxyuris_equi
@@ -42,9 +52,9 @@ Individual_pieces <- A_C2 %>%
   summarise(Frequency = sum(strongyloides_westeri))
 write.csv(Individual_pieces, file = "Manual count Strongyloides_westeri.csv")
 
-######## Auto count only ##########
+############### Auto count only ##########
 
-A_C2 = read.csv("auto_data.csv", head=TRUE, sep=",")
+A_C2 = read.csv("auto_data_minus_dump.csv", head=TRUE, sep=",")
 
 ### Sums
 #oxyuris_equi
@@ -78,9 +88,9 @@ Individual_pieces <- A_C2 %>%
 write.csv(Individual_pieces, file = "Auto count Strongyloides_westeri.csv")
 
 
-####################FP SUM ###############
+############### FP SUM ###############
 
-A_C = read.csv("auto_&_manual_combined_minus_dumps.csv", head=TRUE, sep=",")
+A_C = read.csv("Auto and Manual combined minus dumps -HSI.csv", head=TRUE, sep=",")
 
 
 ## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
@@ -88,21 +98,21 @@ SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi != A_C$oxyuris_equi_m | A_C$stron
                                 A_C$anoplocephala != A_C$anoplocephala_m | A_C$parascaris_equorum != A_C$parascaris_equorum_m |
                                 A_C$strongyloides_westeri != strongyloides_westeri_m))
 
-### False positive case extraction
+## False positive case extraction
 ## working on the all differences file, we want to extract where a specific parasite's 
 ## Auto columns have values that are greater than the manual
 ## columns (false positive) they are subsetted.
 
-### SS2 is reassigned to A_C1. Remember that this is just a subset where there is a difference
+
 A_C1 = SS2
 
-#All FP cases
+#All FP cases extracted
 FP_all <- subset(A_C1, subset = c(A_C1$oxyuris_equi > A_C1$oxyuris_equi_m | A_C1$strongyle > A_C1$strongyle_m | 
                                     A_C1$anoplocephala > A_C1$anoplocephala_m | A_C1$parascaris_equorum > A_C1$parascaris_equorum_m |
                                     A_C1$strongyloides_westeri > A_C1$strongyloides_westeri_m ))
-#write.csv(FP_all, file = "false positive all.csv")
+write.csv(FP_all, file = "false positive all.csv")
 
-# extraction of cases false positive cases for each paracite and saving to individual variables
+# extraction of cases false positive cases for each parasite and saving to individual variables
 FP_oxyuris_equi <- subset(A_C1, subset = c(A_C1$oxyuris_equi > A_C1$oxyuris_equi_m)) 
 FP_strongyle <- subset(A_C1, subset = c(A_C1$strongyle > A_C1$strongyle_m)) 
 FP_anoplocephala <- subset(A_C1, subset = c(A_C1$anoplocephala > A_C1$anoplocephala_m)) 
@@ -110,87 +120,88 @@ FP_parascaris_equorum <- subset(A_C1, subset = c(A_C1$parascaris_equorum  > A_C1
 FP_strongyloides_westeri <- subset(A_C1, subset = c(A_C1$strongyloides_westeri  > A_C1$strongyloides_westeri_m)) 
 
 
-
 ### Sums
 #oxyuris_equi
-Individual_pieces <- FP_oxyuris_equi %>% 
+FP_sum_OE <- FP_oxyuris_equi %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi - oxyuris_equi_m))
-write.csv(Individual_pieces, file = "FP Individual_pieces_sum - Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- FP_strongyle %>% 
+FP_sum_S <- FP_strongyle %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle - strongyle_m))
-write.csv(Individual_pieces, file = "FP Individual_pieces_sum - Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- FP_anoplocephala %>% 
+FP_sum_A <- FP_anoplocephala %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala - anoplocephala_m))
-write.csv(Individual_pieces, file = "FP Individual_pieces_sum - Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- FP_parascaris_equorum %>% 
+FP_sum_PE <- FP_parascaris_equorum %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum - parascaris_equorum_m))
-write.csv(Individual_pieces, file = "FP Individual_pieces_sum - Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- FP_strongyloides_westeri %>% 
+FP_sum_SW  <- FP_strongyloides_westeri %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri - strongyloides_westeri_m))
-write.csv(Individual_pieces, file = "FP Individual_pieces_sum - Strongyloides_westeri.csv")
 
-###No we get the TP remainder from the FP calculation
-### Sums
+# Write all the data to one spreadsheet
+dta <- qpcR:::cbind.na(FP_sum_OE, FP_sum_S, FP_sum_A, FP_sum_PE, FP_sum_SW)
+write.csv(dta, file = "FP per parasite.csv")
+
+### No we get the TP remainder from the FP calculation
+
 #oxyuris_equi
-Individual_pieces <- FP_oxyuris_equi %>% 
+FP_TP_Remainder_OE <- FP_oxyuris_equi %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi_m))
-write.csv(Individual_pieces, file = "FP leftover(TP) Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- FP_strongyle %>% 
+FP_TP_Remainder_S <- FP_strongyle %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle_m))
-write.csv(Individual_pieces, file = "FP leftover(TP) Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- FP_anoplocephala %>% 
+FP_TP_Remainder_A <- FP_anoplocephala %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala_m))
-write.csv(Individual_pieces, file = "FP leftover(TP) Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- FP_parascaris_equorum %>% 
+FP_TP_Remainder_PE <- FP_parascaris_equorum %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum_m))
-write.csv(Individual_pieces, file = "FP leftover(TP) Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- FP_strongyloides_westeri %>% 
+FP_TP_Remainder_SW <- FP_strongyloides_westeri %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri_m))
-write.csv(Individual_pieces, file = "FP leftover(TP) Strongyloides_westeri.csv")
+
+# Write all the data to one spreadsheet
+dta <- qpcR:::cbind.na(FP_TP_Remainder_OE, FP_TP_Remainder_S, FP_TP_Remainder_A, FP_TP_Remainder_PE, FP_TP_Remainder_SW)
+write.csv(dta, file = "FP TP Remainder per parasite.csv")
+
+
+
+
 
 
 ############### FN ##############
-A_C = read.csv("auto_&_manual_combined_minus_dumps.csv", head=TRUE, sep=",")
-
-#All FN cases
-FN_all <- subset(A_C1, subset = c(A_C1$oxyuris_equi < A_C1$oxyuris_equi_m | A_C1$strongyle < A_C1$strongyle_m | 
-                                    A_C1$anoplocephala < A_C1$anoplocephala_m | A_C1$parascaris_equorum < A_C1$parascaris_equorum_m |
-                                    A_C1$strongyloides_westeri < A_C1$strongyloides_westeri_m))
-write.csv(FN_all, file = "false negative all.csv")
-
+A_C = read.csv("Auto and Manual combined minus dumps -HSI.csv", head=TRUE, sep=",")
 
 ## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
 SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi != A_C$oxyuris_equi_m | A_C$strongyle != A_C$strongyle_m | 
                                 A_C$anoplocephala != A_C$anoplocephala_m | A_C$parascaris_equorum != A_C$parascaris_equorum_m |
                                 A_C$strongyloides_westeri != strongyloides_westeri_m))
 A_C1= SS2
-write.csv(A_C1, file = "A_C1.csv")
+
+
+#Pulling all FN cases. 
+FP_all <- subset(A_C1, subset = c(A_C1$oxyuris_equi < A_C1$oxyuris_equi_m | A_C1$strongyle < A_C1$strongyle_m | 
+                                    A_C1$anoplocephala < A_C1$anoplocephala_m | A_C1$parascaris_equorum < A_C1$parascaris_equorum_m |
+                                    A_C1$strongyloides_westeri < A_C1$strongyloides_westeri_m ))
+write.csv(FP_all, file = "false negative all.csv")
+
 #Extraction of False Negative files and saving to individual variables
 
 FN_oxyuris_equi <- subset(A_C1, subset = c(A_C1$oxyuris_equi < A_C1$oxyuris_equi_m)) 
@@ -199,137 +210,128 @@ FN_anoplocephala <- subset(A_C1, subset = c(A_C1$anoplocephala < A_C1$anoploceph
 FN_parascaris_equorum <- subset(A_C1, subset = c(A_C1$parascaris_equorum  < A_C1$parascaris_equorum_m)) 
 FN_strongyloides_westeri <- subset(A_C1, subset = c(A_C1$strongyloides_westeri  < A_C1$strongyloides_westeri_m)) 
 
-
-
 ### Sums
 #oxyuris_equi
-Individual_pieces <- FN_oxyuris_equi %>% 
+FN_sum_OE <- FN_oxyuris_equi %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi_m - oxyuris_equi))
-write.csv(Individual_pieces, file = "FN Individual_pieces_sum - Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- FN_strongyle %>% 
+FN_sum_S <- FN_strongyle %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle_m - strongyle))
-write.csv(Individual_pieces, file = "FN Individual_pieces_sum - Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- FN_anoplocephala %>% 
+FN_sum_A <- FN_anoplocephala %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala_m - anoplocephala))
-write.csv(Individual_pieces, file = "FN Individual_pieces_sum - Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- FN_parascaris_equorum %>% 
+FN_sum_PE  <- FN_parascaris_equorum %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum_m - parascaris_equorum))
-write.csv(Individual_pieces, file = "FN Individual_pieces_sum - Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- FN_strongyloides_westeri %>% 
+FN_sum_SW  <- FN_strongyloides_westeri %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri_m - strongyloides_westeri))
-write.csv(Individual_pieces, file = "FN Individual_pieces_sum - Strongyloides_westeri.csv")
+
+
+# Write all the data to one spreadsheet
+dta <- qpcR:::cbind.na(FN_sum_OE, FN_sum_S, FN_sum_A, FN_sum_PE, FN_sum_SW)
+write.csv(dta, file = "FN per parasite.csv")
+
 
 #### Picking up the TP that are left behind from the FN calculation
-### Basically the lower value is what is the shared TP. 
+
 #oxyuris_equi
-Individual_pieces <- FN_oxyuris_equi %>% 
+FN_TP_Remainder_O <- FN_oxyuris_equi %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi))
-write.csv(Individual_pieces, file = "FN leftover(TP) Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- FN_strongyle %>% 
+FN_TP_Remainder_S  <- FN_strongyle %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle))
-write.csv(Individual_pieces, file = "FN leftover(TP) Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- FN_anoplocephala %>% 
+FN_TP_Remainder_A  <- FN_anoplocephala %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala))
-write.csv(Individual_pieces, file = "FN leftover(TP) Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- FN_parascaris_equorum %>% 
+FN_TP_Remainder_PE  <- FN_parascaris_equorum %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum))
-write.csv(Individual_pieces, file = "FN leftover(TP)Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- FN_strongyloides_westeri %>% 
+FN_TP_Remainder_SW  <- FN_strongyloides_westeri %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri))
-write.csv(Individual_pieces, file = "FN leftover(TP) Strongyloides_westeri.csv")
 
-############TP#######
-
-A_C = read.csv("auto_&_manual_combined_minus_dumps.csv", head=TRUE, sep=",")
+dta <- qpcR:::cbind.na(FN_TP_Remainder_O, FN_TP_Remainder_S, FN_TP_Remainder_A, FN_TP_Remainder_PE, FN_TP_Remainder_SW )
+write.csv(dta, file = "FN TP Remainder per parasite.csv")
 
 
-## subset scan_images where both columns have the same value writing them to a file. 
-#SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m | A_C$strongyle == A_C$strongyle_m | 
-                                #A_C$anoplocephala == A_C$anoplocephala_m | A_C$parascaris_equorum == A_C$parascaris_equorum_ |
-                                #A_C$strongyloides_westeri == strongyloides_westeri_m))
 
 
-#write.csv(SS2, file = "True Positives.csv")
-
-TP_oxyuris_equi <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m)) 
-TP_strongyle <- subset(A_C, subset = c(A_C$strongyle == A_C$strongyle_m)) 
-TP_anoplocephala <- subset(A_C, subset = c(A_C$anoplocephala == A_C$anoplocephala_m)) 
-TP_parascaris_equorum <- subset(A_C, subset = c(A_C$parascaris_equorum  == A_C$parascaris_equorum_m)) 
-TP_strongyloides_westeri <- subset(A_C, subset = c(A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m)) 
-
-write.csv(TP_oxyuris_equi, file = "TP_oxyuris_equi.csv")
-write.csv(TP_strongyle, file = "TP_strongyle.csv")
-write.csv(TP_anoplocephala, file = "TP_anoplocephala.csv")
-write.csv(TP_parascaris_equorum, file = "TP_parascaris_equorum.csv")
-write.csv(TP_strongyloides_westeri, file = "TP_strongyloides_westeri.csv")
 
 
-# Here we need to filter the 0==0 values (true negative) to get the true positives. All the above will now be saved
-# saved with a 1 behind their names
-#################
-TP_oxyuris_equi1 = read.csv("TP_oxyuris_equi1.csv", head=TRUE, sep=",")
-TP_strongyle1 = read.csv("TP_strongyle1.csv", head=TRUE, sep=",")
-TP_anoplocephala1 = read.csv("TP_anoplocephala1.csv", head=TRUE, sep=",")
-TP_parascaris_equorum1 = read.csv("TP_parascaris_equorum1.csv", head=TRUE, sep=",")
-TP_strongyloides_westeri1= read.csv("TP_strongyloides_westeri1.csv", head=TRUE, sep=",")
+
+
+
+############### TP#######
+
+A_C = read.csv("Auto and Manual combined minus dumps -HSI.csv", head=TRUE, sep=",")
+
+TP_oxyuris_equi <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m & A_C$oxyuris_equi>=1)) 
+TP_strongyle <- subset(A_C, subset = c(A_C$strongyle == A_C$strongyle_m & A_C$strongyle>=1)) 
+TP_anoplocephala <- subset(A_C, subset = c(A_C$anoplocephala == A_C$anoplocephala_m & A_C$anoplocephala>=1)) 
+TP_parascaris_equorum <- subset(A_C, subset = c(A_C$parascaris_equorum  == A_C$parascaris_equorum_m & A_C$parascaris_equorum>=1)) 
+TP_strongyloides_westeri <- subset(A_C, subset = c(A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m & A_C$strongyloides_westeri>1)) 
+
+#Pulling all FP cases
+FP_all <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m & A_C$oxyuris_equi>=1 | 
+                                   A_C$strongyle == A_C$strongyle_m & A_C$strongyle>=1 | 
+                                    A_C$anoplocephala == A_C$anoplocephala_m & A_C$anoplocephala>=1 | 
+                                   A_C$parascaris_equorum  == A_C$parascaris_equorum_m & A_C$parascaris_equorum>=1 |
+                                    A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m & A_C$strongyloides_westeri>1 ))
+write.csv(FP_all, file = "True positive all.csv")
+
 
 ### Sums of eggs per scan_image group by scan_id
 
 #oxyuris_equi
-Individual_pieces <- TP_oxyuris_equi1 %>% 
+TP_sum_OE <- TP_oxyuris_equi %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi))
-write.csv(Individual_pieces, file = "TP Individual_pieces_sum - Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- TP_strongyle1 %>% 
+TP_sum_S <- TP_strongyle %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle))
-write.csv(Individual_pieces, file = "TP Individual_pieces_sum - Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- TP_anoplocephala1 %>% 
+TP_sum_A <- TP_anoplocephala %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala))
-write.csv(Individual_pieces, file = "TP Individual_pieces_sum - Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- TP_parascaris_equorum1 %>% 
+TP_sum_PE <- TP_parascaris_equorum %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum))
-write.csv(Individual_pieces, file = "TP Individual_pieces_sum - Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- TP_strongyloides_westeri1 %>% 
+TP_sum_SW <- TP_strongyloides_westeri %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri))
-write.csv(Individual_pieces, file = "TP Individual_pieces_sum - Strongyloides_westeri.csv")
+
+
+dta <- qpcR:::cbind.na(TP_sum_OE, TP_sum_S, TP_sum_A, TP_sum_PE, TP_sum_SW )
+write.csv(dta, file = "TP per parasite.csv")
+
+
+
 
 ###All species egg sums
 #Optional
@@ -342,7 +344,12 @@ write.csv(Individual_pieces, file = "TP Individual_pieces_sum - Strongyloides_we
 
 
 
+### Count rows per scan_id that post dump
+A_Css = data.frame(A_C)
 
+A_Cssagr = aggregate(cbind(count = scanimage_id) ~ scan_id, 
+                     data = A_Css, 
+                     FUN = function(x){NROW(x)})
 
-
+write.csv(A_Cssagr, file = "Rows per scan_id original files combined all col.csv")
 
