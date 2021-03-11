@@ -11,86 +11,87 @@ install.packages("dplyr")
 library(dplyr)
 
 ############### Data prep #########
-#Add "-m" to the end of each of the parasite names in the manula doc
-
-
+# Remove dumps from manual and Auto
+# Combine the auto and manual files and remove dumps
+# Ensure all spreadsheets are saved in .CSV format
+# Add "-m" to the end of each of the parasite names in the manual doc
+# Set WD
 
 
 
 ############### Manual only count #############
-
-A_C2 = read.csv("manual_data_minus_dump_202102261212.csv", head=TRUE, sep=",")
+A_C2 = read.csv("manual_data_minus_dump_202103011159.csv", head=TRUE, sep=",")
 
 ### Sums
 #oxyuris_equi
-Individual_pieces <- A_C2 %>% 
+OE_ManualCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi))
-write.csv(Individual_pieces, file = "Manual count Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- A_C2 %>% 
+S_ManualCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle))
-write.csv(Individual_pieces, file = "Manual count Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- A_C2 %>% 
+A_ManualCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala))
-write.csv(Individual_pieces, file = "Manual count Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- A_C2 %>% 
+PE_ManualCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum ))
-write.csv(Individual_pieces, file = "Manual count Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- A_C2 %>% 
+SW_ManualCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri))
-write.csv(Individual_pieces, file = "Manual count Strongyloides_westeri.csv")
+
+# Write all individual manual counts to one spreadsheet
+dta <- qpcR:::cbind.na(OE_ManualCount, S_ManualCount, A_ManualCount, PE_ManualCount, SW_ManualCount)
+write.csv(dta, file = "Manual Counts for individual parasites.csv")
+
+
 
 ############### Auto count only ##########
-
-A_C2 = read.csv("auto_data_minus_dump.csv", head=TRUE, sep=",")
+A_C2 = read.csv("auto_data_minus_dump_202103011501.csv", head=TRUE, sep=",")
 
 ### Sums
 #oxyuris_equi
-Individual_pieces <- A_C2 %>% 
+OE_AutoCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(oxyuris_equi))
-write.csv(Individual_pieces, file = "Auto count Oxyuris_equi.csv")
 
 # Stronglye
-Individual_pieces <- A_C2 %>% 
+S_AutoCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyle))
-write.csv(Individual_pieces, file = "Auto count Stronglye.csv")
 
 #anoplocephala
-Individual_pieces <- A_C2 %>% 
+A_AutoCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(anoplocephala))
-write.csv(Individual_pieces, file = "Auto  count Anoplocephala.csv")
 
 #parascaris_equorum
-Individual_pieces <- A_C2 %>% 
+PE_AutoCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(parascaris_equorum ))
-write.csv(Individual_pieces, file = "Auto count Parascaris_equorum.csv")
 
 #strongyloides_westeri
-Individual_pieces <- A_C2 %>% 
+SW_AutoCount <- A_C2 %>% 
   group_by(scan_id) %>% 
   summarise(Frequency = sum(strongyloides_westeri))
-write.csv(Individual_pieces, file = "Auto count Strongyloides_westeri.csv")
+
+# Write all individual manual counts to one spreadsheet
+dta <- qpcR:::cbind.na(OE_AutoCount, S_AutoCount, A_AutoCount, PE_AutoCount, SW_AutoCount)
+write.csv(dta, file = "Auto Counts for individual parasites.csv")
+
 
 
 ############### FP SUM ###############
 
-A_C = read.csv("Auto and Manual combined minus dumps -HSI.csv", head=TRUE, sep=",")
+A_C = read.csv("Auto and manual combined minus dumps 01.03.21.csv", head=TRUE, sep=",")
 
 
 ## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
@@ -187,7 +188,7 @@ write.csv(dta, file = "FP TP Remainder per parasite.csv")
 
 
 ############### FN ##############
-A_C = read.csv("Auto and Manual combined minus dumps -HSI.csv", head=TRUE, sep=",")
+A_C = read.csv("Auto and manual combined minus dumps 01.03.21.csv", head=TRUE, sep=",")
 
 ## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
 SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi != A_C$oxyuris_equi_m | A_C$strongyle != A_C$strongyle_m | 
@@ -282,7 +283,7 @@ write.csv(dta, file = "FN TP Remainder per parasite.csv")
 
 ############### TP#######
 
-A_C = read.csv("Auto and Manual combined minus dumps -HSI.csv", head=TRUE, sep=",")
+A_C = read.csv("Auto and manual combined minus dumps - HSI - 01.03.21.csv", head=TRUE, sep=",")
 
 TP_oxyuris_equi <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m & A_C$oxyuris_equi>=1)) 
 TP_strongyle <- subset(A_C, subset = c(A_C$strongyle == A_C$strongyle_m & A_C$strongyle>=1)) 
@@ -352,4 +353,3 @@ A_Cssagr = aggregate(cbind(count = scanimage_id) ~ scan_id,
                      FUN = function(x){NROW(x)})
 
 write.csv(A_Cssagr, file = "Rows per scan_id original files combined all col.csv")
-
