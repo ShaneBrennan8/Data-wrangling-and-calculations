@@ -295,7 +295,7 @@ FP_all <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m & A_C$ox
                                    A_C$strongyle == A_C$strongyle_m & A_C$strongyle>=1 | 
                                     A_C$anoplocephala == A_C$anoplocephala_m & A_C$anoplocephala>=1 | 
                                    A_C$parascaris_equorum  == A_C$parascaris_equorum_m & A_C$parascaris_equorum>=1 |
-                                    A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m & A_C$strongyloides_westeri>1 ))
+                                    A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m & A_C$strongyloides_westeri>=1 ))
 write.csv(FP_all, file = "True positive all.csv")
 
 
