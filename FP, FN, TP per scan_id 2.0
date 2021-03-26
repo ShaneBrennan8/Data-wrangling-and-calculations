@@ -1,0 +1,454 @@
+install.packages("qpcR")
+library(qpcR)
+
+install.packages("tidyr")
+library(tidyr)
+
+install.packages("plyr")
+library(plyr)
+
+install.packages("dplyr")
+library(dplyr)
+
+############### Data prep #########
+# Remove dumps from manual and Auto. Ensure both spreadsheets are the same length(Some scanIDs might appear in one and not the other) ( this may have to be done 
+# after the manual and dump spreadsheets are processed)
+# Combine the auto and manual files on the scan_image column. Make sure not to mess this up by using the scan_id column
+# Ensure all spreadsheets are saved in .CSV format
+# Add "-m" to the end of each of the parasite names in the manual doc after merging
+# Set WD
+
+
+
+############### Manual only count #############
+# Remember to remove dumps and add _m
+A_C2 = read.csv("manual_data_minus_dump_202103251231.csv", head=TRUE, sep=",")
+
+
+
+### Sums
+#oxyuris_equi
+OE_ManualCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi))
+
+# Stronglye
+S_ManualCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle))
+
+#anoplocephala
+A_ManualCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala))
+
+#parascaris_equorum
+PE_ManualCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum))
+
+#strongyloides_westeri
+SW_ManualCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri))
+
+# Write all individual manual counts to one spreadsheet
+dta <- qpcR:::cbind.na(OE_ManualCount, S_ManualCount, A_ManualCount, PE_ManualCount, SW_ManualCount)
+write.csv(dta, file = "Manual Counts for individual parasites.csv")
+
+
+
+############### Auto count only ##########
+# Remember to remove dumps
+A_C2 = read.csv("auto_data_minus_dump_202103252212.csv", head=TRUE, sep=",")
+
+### Sums
+#oxyuris_equi
+OE_AutoCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi))
+
+# Stronglye
+S_AutoCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle))
+
+#anoplocephala
+A_AutoCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala))
+
+#parascaris_equorum
+PE_AutoCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum))
+
+#strongyloides_westeri
+SW_AutoCount <- A_C2 %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri))
+
+# Write all individual manual counts to one spreadsheet
+dta <- qpcR:::cbind.na(OE_AutoCount, S_AutoCount, A_AutoCount, PE_AutoCount, SW_AutoCount)
+write.csv(dta, file = "Auto Counts for individual parasites.csv")
+
+
+############### scan_id list ###########
+## a distinct list of all the scan_ids. This will be referred to throughout the program
+
+# first get column with scan_ids. Use of drop=FALSE here to keep the column header. This also turns it into a dataframe. 
+
+A_C = read.csv("combined_combined_minus_dump_202103151235 - HSI + TEL.csv", head=TRUE, sep=",")
+
+scan_id_i_hope <- A_C[,c("scan_id"), drop = FALSE]
+# distinct gives you the unique values in a list
+scan_id_i_hope <- distinct(scan_id_i_hope)
+
+############### FP SUM ###############
+#At this point you want to be merging datasets together
+
+A_C = read.csv("combined_combined_minus_dump_202103151235 - HSI + TEL.csv", head=TRUE, sep=",")
+
+
+## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
+SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi != A_C$oxyuris_equi_m | A_C$strongyle != A_C$strongyle_m | 
+                                A_C$anoplocephala != A_C$anoplocephala_m | A_C$parascaris_equorum != A_C$parascaris_equorum_m |
+                                A_C$strongyloides_westeri != strongyloides_westeri_m))
+
+## False positive case extraction
+## working on the all differences file, we want to extract where a specific parasite's 
+## Auto columns have values that are greater than the manual
+## columns (false positive) they are subsetted.
+
+
+A_C1 = SS2
+
+#All FP cases extracted
+FP_all <- subset(A_C1, subset = c(A_C1$oxyuris_equi > A_C1$oxyuris_equi_m | A_C1$strongyle > A_C1$strongyle_m | 
+                                    A_C1$anoplocephala > A_C1$anoplocephala_m | A_C1$parascaris_equorum > A_C1$parascaris_equorum_m |
+                                    A_C1$strongyloides_westeri > A_C1$strongyloides_westeri_m ))
+write.csv(FP_all, file = "false positive all.csv")
+
+# extraction of cases false positive cases for each parasite and saving to individual variables
+FP_oxyuris_equi <- subset(A_C1, subset = c(A_C1$oxyuris_equi > A_C1$oxyuris_equi_m)) 
+FP_strongyle <- subset(A_C1, subset = c(A_C1$strongyle > A_C1$strongyle_m)) 
+FP_anoplocephala <- subset(A_C1, subset = c(A_C1$anoplocephala > A_C1$anoplocephala_m)) 
+FP_parascaris_equorum <- subset(A_C1, subset = c(A_C1$parascaris_equorum  > A_C1$parascaris_equorum_m)) 
+FP_strongyloides_westeri <- subset(A_C1, subset = c(A_C1$strongyloides_westeri  > A_C1$strongyloides_westeri_m)) 
+
+
+### Sums
+#oxyuris_equi
+FP_sum_OE <- FP_oxyuris_equi %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi - oxyuris_equi_m))
+
+# Stronglye
+FP_sum_S <- FP_strongyle %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle - strongyle_m))
+
+#anoplocephala
+FP_sum_A <- FP_anoplocephala %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala - anoplocephala_m))
+
+#parascaris_equorum
+FP_sum_PE <- FP_parascaris_equorum %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum - parascaris_equorum_m))
+
+#strongyloides_westeri
+FP_sum_SW  <- FP_strongyloides_westeri %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri - strongyloides_westeri_m))
+
+
+# Left Join each individual parasite to the full column list. "NA"s are replaced with 0
+joined_table_FP_OE <-left_join(scan_id_i_hope, FP_sum_OE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_S <-left_join(scan_id_i_hope, FP_sum_S, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_A <-left_join(scan_id_i_hope, FP_sum_A, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_PE <-left_join(scan_id_i_hope, FP_sum_PE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_SW <-left_join(scan_id_i_hope, FP_sum_SW, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+
+# Datasets are bound together. They are of equal length here
+dta <- cbind(joined_table_FP_OE, joined_table_FP_S, joined_table_FP_A, joined_table_FP_PE, joined_table_FP_SW)
+write.csv(dta, file = "FP per parasite.csv")
+
+
+
+
+### No we get the TP remainder from the FP calculation
+
+#oxyuris_equi
+FP_TP_Remainder_OE <- FP_oxyuris_equi %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi_m))
+
+# Stronglye
+FP_TP_Remainder_S <- FP_strongyle %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle_m))
+
+#anoplocephala
+FP_TP_Remainder_A <- FP_anoplocephala %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala_m))
+
+#parascaris_equorum
+FP_TP_Remainder_PE <- FP_parascaris_equorum %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum_m))
+
+#strongyloides_westeri
+FP_TP_Remainder_SW <- FP_strongyloides_westeri %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri_m))
+
+
+# Left Join each individual parasite to the full column list. "NA"s are replaced with 0
+joined_table_FP_TP_OE <-left_join(scan_id_i_hope, FP_TP_Remainder_OE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_TP_S <-left_join(scan_id_i_hope, FP_TP_Remainder_S, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_TP_A <-left_join(scan_id_i_hope, FP_TP_Remainder_A, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_TP_PE <-left_join(scan_id_i_hope, FP_TP_Remainder_PE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FP_TP_SW <-left_join(scan_id_i_hope, FP_TP_Remainder_SW, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+
+
+
+
+
+
+
+############### FN ##############
+A_C = read.csv("combined_combined_minus_dump_202103151235 - HSI + TEL.csv", head=TRUE, sep=",")
+
+## subset scan_images where there is a difference(+ or -) between respective columns and writing them to a file. 
+SS2 <- subset(A_C, subset = c(A_C$oxyuris_equi != A_C$oxyuris_equi_m | A_C$strongyle != A_C$strongyle_m | 
+                                A_C$anoplocephala != A_C$anoplocephala_m | A_C$parascaris_equorum != A_C$parascaris_equorum_m |
+                                A_C$strongyloides_westeri != strongyloides_westeri_m))
+A_C1= SS2
+
+
+#Pulling all FN cases. 
+FP_all <- subset(A_C1, subset = c(A_C1$oxyuris_equi < A_C1$oxyuris_equi_m | A_C1$strongyle < A_C1$strongyle_m | 
+                                    A_C1$anoplocephala < A_C1$anoplocephala_m | A_C1$parascaris_equorum < A_C1$parascaris_equorum_m |
+                                    A_C1$strongyloides_westeri < A_C1$strongyloides_westeri_m ))
+write.csv(FP_all, file = "false negative all.csv")
+
+#Extraction of False Negative files and saving to individual variables
+
+FN_oxyuris_equi <- subset(A_C1, subset = c(A_C1$oxyuris_equi < A_C1$oxyuris_equi_m)) 
+FN_strongyle <- subset(A_C1, subset = c(A_C1$strongyle < A_C1$strongyle_m)) 
+FN_anoplocephala <- subset(A_C1, subset = c(A_C1$anoplocephala < A_C1$anoplocephala_m)) 
+FN_parascaris_equorum <- subset(A_C1, subset = c(A_C1$parascaris_equorum  < A_C1$parascaris_equorum_m)) 
+FN_strongyloides_westeri <- subset(A_C1, subset = c(A_C1$strongyloides_westeri  < A_C1$strongyloides_westeri_m)) 
+
+### Sums
+#oxyuris_equi
+FN_sum_OE <- FN_oxyuris_equi %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi_m - oxyuris_equi))
+
+# Stronglye
+FN_sum_S <- FN_strongyle %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle_m - strongyle))
+
+#anoplocephala
+FN_sum_A <- FN_anoplocephala %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala_m - anoplocephala))
+
+#parascaris_equorum
+FN_sum_PE  <- FN_parascaris_equorum %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum_m - parascaris_equorum))
+
+#strongyloides_westeri
+FN_sum_SW  <- FN_strongyloides_westeri %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri_m - strongyloides_westeri))
+
+
+# Left Join each individual parasite to the full column list. "NA"s are replaced with 0
+joined_table_FN_OE <-left_join(scan_id_i_hope, FN_sum_OE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_S <-left_join(scan_id_i_hope, FN_sum_S, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_A <-left_join(scan_id_i_hope, FN_sum_A, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_PE <-left_join(scan_id_i_hope, FN_sum_PE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_SW <-left_join(scan_id_i_hope, FN_sum_SW, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+
+# Datasets are bound together. They are of equal length here
+dta <- cbind(joined_table_FN_OE, joined_table_FN_S, joined_table_FN_A, joined_table_FN_PE, joined_table_FN_SW)
+write.csv(dta, file = "FN per parasite.csv")
+
+
+#### Picking up the TP that are left behind from the FN calculation
+
+#oxyuris_equi
+FN_TP_Remainder_OE <- FN_oxyuris_equi %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi))
+
+# Stronglye
+FN_TP_Remainder_S  <- FN_strongyle %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle))
+
+#anoplocephala
+FN_TP_Remainder_A  <- FN_anoplocephala %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala))
+
+#parascaris_equorum
+FN_TP_Remainder_PE  <- FN_parascaris_equorum %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum))
+
+#strongyloides_westeri
+FN_TP_Remainder_SW  <- FN_strongyloides_westeri %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri))
+
+# Left Join each individual parasite to the full column list. "NA"s are replaced with 0
+joined_table_FN_TP_OE <-left_join(scan_id_i_hope, FN_TP_Remainder_OE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_TP_S <-left_join(scan_id_i_hope, FN_TP_Remainder_S, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_TP_A <-left_join(scan_id_i_hope, FN_TP_Remainder_A, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_TP_PE <-left_join(scan_id_i_hope, FN_TP_Remainder_PE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_FN_TP_SW <-left_join(scan_id_i_hope, FN_TP_Remainder_SW, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+
+
+
+
+
+
+
+
+
+
+############### TP#######
+
+A_C = read.csv("combined_combined_minus_dump_202103151235 - HSI + TEL.csv", head=TRUE, sep=",")
+
+TP_oxyuris_equi <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m & A_C$oxyuris_equi>=1)) 
+TP_strongyle <- subset(A_C, subset = c(A_C$strongyle == A_C$strongyle_m & A_C$strongyle>=1)) 
+TP_anoplocephala <- subset(A_C, subset = c(A_C$anoplocephala == A_C$anoplocephala_m & A_C$anoplocephala>=1)) 
+TP_parascaris_equorum <- subset(A_C, subset = c(A_C$parascaris_equorum  == A_C$parascaris_equorum_m & A_C$parascaris_equorum>=1)) 
+TP_strongyloides_westeri <- subset(A_C, subset = c(A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m & A_C$strongyloides_westeri>=1)) 
+
+#Pulling all FP cases
+FP_all <- subset(A_C, subset = c(A_C$oxyuris_equi == A_C$oxyuris_equi_m & A_C$oxyuris_equi>=1 | 
+                                   A_C$strongyle == A_C$strongyle_m & A_C$strongyle>=1 | 
+                                    A_C$anoplocephala == A_C$anoplocephala_m & A_C$anoplocephala>=1 | 
+                                   A_C$parascaris_equorum  == A_C$parascaris_equorum_m & A_C$parascaris_equorum>=1 |
+                                    A_C$strongyloides_westeri  == A_C$strongyloides_westeri_m & A_C$strongyloides_westeri>=1 ))
+write.csv(FP_all, file = "True positive all.csv")
+
+
+### Sums of eggs per scan_image group by scan_id
+
+#oxyuris_equi
+TP_sum_OE <- TP_oxyuris_equi %>% 
+  group_by(scan_id) %>% 
+  summarise(oxyuris_equi = sum(oxyuris_equi))
+
+# Stronglye
+TP_sum_S <- TP_strongyle %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyle = sum(strongyle))
+
+#anoplocephala
+TP_sum_A <- TP_anoplocephala %>% 
+  group_by(scan_id) %>% 
+  summarise(anoplocephala = sum(anoplocephala))
+
+#parascaris_equorum
+TP_sum_PE <- TP_parascaris_equorum %>% 
+  group_by(scan_id) %>% 
+  summarise(parascaris_equorum = sum(parascaris_equorum))
+
+#strongyloides_westeri
+TP_sum_SW <- TP_strongyloides_westeri %>% 
+  group_by(scan_id) %>% 
+  summarise(strongyloides_westeri = sum(strongyloides_westeri))
+
+
+
+# Left Join each individual parasite to the full column list. "NA"s are replaced with 0
+joined_table_TP_OE <-left_join(scan_id_i_hope, TP_sum_OE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_TP_S <-left_join(scan_id_i_hope, TP_sum_S, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_TP_A <-left_join(scan_id_i_hope, TP_sum_A, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_TP_PE <-left_join(scan_id_i_hope, TP_sum_PE, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+joined_table_TP_SW <-left_join(scan_id_i_hope, TP_sum_SW, by = c("scan_id" = "scan_id"))%>%mutate_if(is.numeric,coalesce,0)
+
+
+
+######## TP Addition #######
+# Here we'll take the remainders from our processes about
+
+
+OE_TP_Combined <- cbind(joined_table_TP_OE$oxyuris_equi, joined_table_FP_TP_OE$oxyuris_equi, joined_table_FP_TP_OE$oxyuris_equi_m)
+OE_TP_Sum <- rowSums(OE_TP_Combined)
+write.csv(OE_TP_Sum, file = "TP Oxyuris_equi.csv")
+
+S_TP_Combined <- cbind(joined_table_TP_S$strongyle, joined_table_FP_TP_S$strongyle, joined_table_FN_TP_S$strongyle)
+S_TP_Sum <- rowSums(S_TP_Combined)
+write.csv(S_TP_Sum, file = "TP Stronglye.csv")
+
+A_TP_Combined <- cbind(joined_table_TP_A$anoplocephala, joined_table_FP_TP_A$anoplocephala, joined_table_FN_TP_A$anoplocephala)
+A_TP_Sum <- rowSums(A_TP_Combined)
+write.csv(A_TP_Sum, file = "TP Anoplocephala.csv")
+
+PE_TP_Combined <- cbind(joined_table_TP_PE$parascaris_equorum, joined_table_FP_TP_PE$parascaris_equorum, joined_table_FN_TP_PE$parascaris_equorum)
+PE_TP_Sum <- rowSums(PE_TP_Combined)
+write.csv(PE_TP_Sum, file = "TP parascaris_equorum.csv")
+
+
+SW_TP_Combined <- cbind(joined_table_TP_SW$strongyloides_westeri, joined_table_FP_TP_SW$strongyloides_westeri,joined_table_FN_TP_SW$strongyloides_westeri)
+SW_TP_Sum <- rowSums(SW_TP_Combined)
+write.csv(SW_TP_Sum, file = "TP strongyloides_westeri.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###All species egg sums
+#Optional
+
+#Individual_pieces <- TP_all %>% 
+#  group_by(scan_id) %>% 
+#  summarise(Frequency = sum(oxyuris_equi + strongyle + anoplocephala + parascaris_equorum + strongyloides_westeri))
+
+#write.csv(Individual_pieces, file = "TP Individual_pieces_sum - All.csv")
+
+
+
+### Count rows per scan_id that post dump
+A_Css = data.frame(A_C)
+
+A_Cssagr = aggregate(cbind(count = scanimage_id) ~ scan_id, 
+                     data = A_Css, 
+                     FUN = function(x){NROW(x)})
+
+write.csv(A_Cssagr, file = "Rows per scan_id original files combined all col.csv")
+
+
