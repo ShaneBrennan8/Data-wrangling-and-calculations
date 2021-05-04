@@ -22,6 +22,7 @@ library(microbenchmark)
 ### The objective here is to do the cumulative sum data of each parasite 
 ### then the quartiles are calculated so we have data which we will use to make future predictions on egg counts
 ### Hopefully github is updated with this
+### Hopefull github will see this too
 
 # First read in the data set and change it to a data frame
 A_C2 = read.csv("manual_data_minus_dump_quartile_work_14122021.csv", head=TRUE, sep=",")
