@@ -1,0 +1,224 @@
+install.packages("tidyr")
+library(tidyr)
+
+install.packages("plyr")
+library(plyr)
+
+install.packages("dplyr")
+library(dplyr)
+
+install.packages("stringr")
+library(stringr)
+
+library(ggplot2)
+
+
+#### read in the data ####
+ops = read.csv("raw data ops.csv", head=TRUE, sep=",")
+complaints = read.csv("raw data complaints.csv", head=TRUE, sep=",")
+hashkey = read.csv("complaints hashtag key.csv", head=TRUE, sep=",")
+
+ 
+##### extract the hashtag from the case_description create a new column #Hashtag ####
+complaints <- complaints %>%
+  mutate(Hashtag = str_extract(Case_Description, "#\\w+") %>% 
+           toupper())
+
+#### join the hashtag key to the raw data complaints dataset ####
+complaints <- complaints %>%
+  left_join(hashkey, by = "Hashtag")
+
+print(complaints)
+#write.csv(complaints, file = "complaints.csv")
+
+#### get a count per agent of the report groupings ####
+hashtag_counts <- complaints %>%
+  group_by(Created_By, `Hashtag_Report_Grouping`) %>%
+  summarise(count = n(), .groups = 'drop')
+
+#visualise
+ggplot(hashtag_counts, aes(x = Created_By, y = count, fill = Hashtag_Report_Grouping)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Reports count of complaints by Agent",
+       x = "Created_By",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+######## business line level per agent ####
+business_line_counts <- complaints %>%
+  group_by(Created_By, Business_Line_level) %>%
+  summarise(count = n(), .groups = 'drop')
+
+# Create the bar plot
+ggplot(business_line_counts, aes(x = Created_By, y = count, fill = Business_Line_level)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(title = "Business Line Levels per Agent",
+       x = "Created By",
+       y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+###### average days to resolve per agent ####
+
+average_days_to_resolve <- complaints %>%
+  group_by(Created_By) %>%
+  summarise(avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE), .groups = 'drop')
+
+# Create the bar plot
+ggplot(average_days_to_resolve, aes(x = Created_By, y = avg_days, fill = Created_By)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Days to Resolve per Agent",
+       x = "Agent",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#### average days to resolve per grouping ####
+average_days_to_resolve <- complaints %>%
+  group_by(Hashtag_Report_Grouping) %>%
+  summarise(avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE), .groups = 'drop')
+
+ggplot(average_days_to_resolve, aes(x = Hashtag_Report_Grouping, y = avg_days, fill = Hashtag_Report_Grouping)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Days to Resolve per Hashtag Report Grouping",
+       x = "Hashtag Report Grouping",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#### For authority/privacy/legal cases how long did each description take to resolve ####
+
+####### legal cases resolution time per hashtage description of Athority/Privacy/Legal cases ####
+filtered_complaints <- complaints %>%
+  filter(Hashtag_Report_Grouping == "Authority/Privacy/Legal")
+
+# Summarize the data to get the average No_Of_Days_To_Resolve per Created_By
+average_days_to_resolve <- filtered_complaints %>%
+  group_by(HashTag_Description) %>%
+  summarise(avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE), .groups = 'drop')
+
+# Create the bar plot
+ggplot(average_days_to_resolve, aes(x = HashTag_Description, y = avg_days)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Days to Resolve per Description for Authority/Privacy/Legal Cases",
+       x = "Agent",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+#####  descriptions per report groupings for legal and privacy ####
+filtered_complaints <- complaints %>%
+  filter(Hashtag_Report_Grouping == "Authority/Privacy/Legal")
+
+# Summarize the data to get the average No_Of_Days_To_Resolve and count per HashTag_Description
+average_days_to_resolve <- filtered_complaints %>%
+  group_by(HashTag_Description) %>%
+  summarise(
+    avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE),
+    count = n(),
+    .groups = 'drop'
+  )
+
+# Create the bar plot
+ggplot(average_days_to_resolve, aes(x = HashTag_Description, y = avg_days, fill = HashTag_Description)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = count), vjust = -0.5) +
+  labs(title = "Average Days to Resolve per Description for Authority/Privacy/Legal Cases",
+       x = "HashTag Description",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+#####  descriptions per report groupings for legal and privacy ####
+
+# Summarize the data to get the average No_Of_Days_To_Resolve and count per HashTag_Description
+average_days_to_resolve <- complaints %>%
+  group_by(HashTag_Description) %>%
+  summarise(
+    avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE),
+    count = n(),
+    .groups = 'drop'
+  )
+
+# Create the bar plot
+ggplot(average_days_to_resolve, aes(x = HashTag_Description, y = avg_days, fill = HashTag_Description)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = count), vjust = -0.5) +
+  labs(title = "Average Days to Resolve per Description for all casesCases",
+       x = "HashTag Description",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### Excess analysis here ####
+
+average_days_to_resolve <- complaints %>%
+  group_by(Business_Line_level) %>%
+  summarise(avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE), .groups = 'drop')
+
+# Create the bar plot
+ggplot(average_days_to_resolve, aes(x = Business_Line_level, y = avg_days, fill = Business_Line_level)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Days to Resolve per Business Line Level",
+       x = "Business Line Level",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+####### legal cases resolution time per agent ####
+filtered_complaints <- complaints %>%
+  filter(Hashtag_Report_Grouping == "Authority/Privacy/Legal")
+
+# Summarize the data to get the average No_Of_Days_To_Resolve per Created_By
+average_days_to_resolve <- filtered_complaints %>%
+  group_by(Created_By) %>%
+  summarise(avg_days = mean(No_Of_Days_To_Resolve, na.rm = TRUE), .groups = 'drop')
+
+# Create the bar plot
+ggplot(average_days_to_resolve, aes(x = Created_By, y = avg_days, fill = Created_By)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Days to Resolve per Agent for Authority/Privacy/Legal Cases",
+       x = "Agent",
+       y = "Average Days to Resolve") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+
+
+
+
+
+
+
+
+
+#### count and group by ####
+summary_data <- complaints %>%
+  group_by(Created_By) %>%
+  summarise(
+    avg_days_to_resolve = mean(No_Of_Days_To_Resolve, na.rm = TRUE),
+    count = n()
+  )
+
+print(summary_data)
+
+
